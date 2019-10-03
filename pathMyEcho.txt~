@@ -1,0 +1,7 @@
+# If I want to use мояэха I need to change $PATH for one session this way:
+
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/home/john/Programing/C/MyEchoCommand
+
+# добавил эту строку в ~/.bashrc. После перезагрузки...
+# ...мояэха работает.
+# NOTE! убрать эту строку из .bashrc
