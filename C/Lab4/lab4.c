@@ -1,4 +1,5 @@
 /* lab4.c */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -39,10 +40,16 @@ int main(int argc, char * argv[])
 		exit(1);
 	}
 	
-	FILE * inputFile;
-	if((inputFile = fopen(argv[1], "r+")) == NULL)
+	FILE * inputFile, * outputFile;
+	if((inputFile = fopen(argv[1], "r")) == NULL)
 	{
-		perror("Cannot open file");
+		perror("Cannot open input file");
+		exit(1);
+	}
+	
+	if((outputFile = fopen("outputFile", "w+")) == NULL)
+	{
+		perror("Cannot open output file");
 		exit(1);
 	}
 	
@@ -57,15 +64,20 @@ int main(int argc, char * argv[])
 			perror("makeChange failed");
 			exit(1);
 		}
-		printf("%s\n", (char *)buf);
+		fputs((char *)buf, outputFile);
 	}
 	
 	if(fclose(inputFile))
 	{
-		perror("Cannot close file");
+		perror("Cannot close input file");
 		exit(1);
 	}
 	
+	if(fclose(outputFile))
+	{
+		perror("Cannot close output file");
+		exit(1);
+	}
 	
 	return 0;
 }
