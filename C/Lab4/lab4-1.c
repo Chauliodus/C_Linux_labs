@@ -18,6 +18,7 @@
 size_t makeChange(uint8_t * buffer, size_t * count, size_t maxCount)
 {
 	uint8_t newBuf[strlen((char *)buffer) * 2]; // should I use memmove?
+	memset(newBuf, '\0', strlen((char *)buffer) * 2);
 	uint8_t sign = buffer[0];
 	size_t i = 0, j = 0;
 	bool write = true;
