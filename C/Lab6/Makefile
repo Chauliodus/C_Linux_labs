@@ -1,4 +1,4 @@
 lab6 : lab6.c
-	gcc -o lab6 lab6.c -Wall -std=c99
+	gcc -g -o lab6 lab6.c -Wall
 clean :
 	rm lab6
