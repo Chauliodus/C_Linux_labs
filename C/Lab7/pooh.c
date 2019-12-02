@@ -37,6 +37,7 @@ int main(int argc, char * argv[])
 	}
 	
 	char buff[80] = { 0 };
+	char bufff[10] = { 0 };
 	
 	if(barrel <= 0)
 	{
@@ -57,6 +58,8 @@ int main(int argc, char * argv[])
 		lseek(barrel, 0, 0);
 		lockf(barrel, F_LOCK, 10);
 		read(barrel, honey, 10);
+		memset(bufff, 0, 10);
+		write(barrel, bufff, 10);
 		if(atoi(honey) <= 0)
 		{
 			memset(buff, 0, 80);
@@ -104,7 +107,12 @@ int main(int argc, char * argv[])
 				waiting_to_death++;
 				
 			// put value back
-			sprintf(honey, "%d", honey_int);
+			memset(honey, 0, 10);
+			memset(bufff, 0, 10);
+			sprintf(honey, "%d\n", honey_int);
+			printf("%d", honey_int);
+			lseek(barrel, 0, 0);
+			write(barrel, bufff, sizeof(char) * strlen(bufff));
 			lseek(barrel, 0, 0);
 			write(barrel, honey, sizeof(char) * strlen(honey));
 			lseek(barrel, 0, 0);

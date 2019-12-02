@@ -7,7 +7,7 @@
  * Connect between bear and bees performed by pipes.
  * */
  
- #define _GNU_SOURCE
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -31,7 +31,7 @@ int gethoney(int * fd, int log)
 {
 	close(fd[0]);
 	srand(getpid());
-	char * honey = "1 honey";
+	char * honey = "1";
 	char buf[80] = { 0 };
 	size_t sleeptime;
 	do
@@ -162,6 +162,7 @@ int main(int argc, char ** argv)
 		close(fd[i][1]);
 	
 	char buf[MAX_LEN] = { 0 };
+	char bufff[10] = { 0 };
 	
 	int pooh_exit_status;
 	
@@ -194,12 +195,13 @@ int main(int argc, char ** argv)
 		
 		// honey is ready to putting into barrel
 		int ready_honey = 0;
-		
+		//int n;
 		// honey got from bees
 		for(i = 0; i < beecount; i++)
 		{
 			blockfile(fd[i][0]);
-			read(fd[i][0], buf, MAX_LEN);
+			memset(buf, 0, 10);
+			read(fd[i][0], buf, 10);
 			unblockfile(fd[i][0]);
 			
 			ready_honey += atoi(buf);
@@ -245,6 +247,9 @@ int main(int argc, char ** argv)
 			unblockfile(log);
 			
 			lseek(barrel, 0, 0);
+			memset(bufff, 0, 10);
+			write(barrel, bufff, sizeof(char) * strlen(bufff));
+			lseek(barrel, 0, 0);
 			write(barrel, buf, sizeof(char) * strlen(buf));
 			unblockfile(barrel);
 			
@@ -260,11 +265,9 @@ int main(int argc, char ** argv)
 	unblockfile(log);
 	
 	for(i = 0; i < beecount; i++)
-	{
-		free(&pid[i]);
 		close(fd[i][0]);
-	}
-	//free(pid);
+	
+	free(pid);
 	close(barrel);
 	close(log);
 
