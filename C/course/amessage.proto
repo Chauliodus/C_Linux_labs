@@ -1,0 +1,5 @@
+message AMessage {
+	required int32 clients_count = 1;
+	required string	send_str = 2;
+	required int32 listener = 3;
+}
