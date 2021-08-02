@@ -38,18 +38,11 @@ int main(int argc, char *argv[])
 					
     /* Bind to the broadcast port */
     Bind(sock, (struct sockaddr *) &broadcastAddr, sizeof(broadcastAddr));
-
-	//char str[100];
-
-    //Recvfrom(sock, str, sizeof(str), 0, NULL, 0);
-    //printf("%s\n", str);
     
     printf("Жду сервер...\n");
     
     msg_len = Recvfrom(sock, buf, MAX_MSG_SIZE, 0, NULL, 0);
-    //printf("Received:%s\n", buf); 
-    
-    //printf("%d\n", msg_len);
+    //printf(buf);
 
     msg = amessage__unpack(NULL, msg_len, buf);
 	
@@ -57,34 +50,33 @@ int main(int argc, char *argv[])
 		printf("error unpacking incoming message\n");
 		exit(1);
 	} 
-
-	//printf("Recieved: \"%s\", count: \"%d\", listener %d\n", msg->send_str, msg->clients_count, msg->listener); 
     
     amessage__free_unpacked(msg, NULL);
     close(sock);
-    
     
     memset(&connectServAddr, 0, sizeof(connectServAddr));   /* Zero out structure */
     connectServAddr.sin_family = AF_UNIX;                 /* Internet address family */
     connectServAddr.sin_addr.s_addr = inet_addr(addr);//inet_addr("127.0.0.2"); //  /* Any incoming interface */
     connectServAddr.sin_port = htons(connectPort);
 
+    //sprintf(connectServAddr.sun_path, "/tmp/9Lq7BNBnBycd6nxy1.socket");
+
+
+
 	connSock = Socket(AF_UNIX, SOCK_STREAM, 0);
+	//int reuse = 1;
+	//Setsockopt(connSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &reuse, 					sizeof(reuse));
+	//Bind(connSock, (const struct sockaddr *) &connectServAddr,               sizeof(connectServAddr));
+               
     Connect(connSock, (struct sockaddr *) &connectServAddr,
 							sizeof(connectServAddr));
-							
+	sleep(6);
 	char bla[18];
 	sprintf(bla, "blabla%s", argv[1]);
-	//printf(bla);
 	if(send(connSock, bla, sizeof(bla), 0) < sizeof(bla)) DieWithError("send() failed");
+
 	close(connSock);
-	
-    /* установка соединения
-     * генерация случайной строки случайной длины
-     * отправка
-     * сон */
-    
     close(sock);
-    close(connSock);
+
     exit(0);
 }

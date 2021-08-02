@@ -12,22 +12,58 @@
  * Имя обертки = имя функции с заглавной буквы, так, обертка для 
  * func(...) будет называться Func(...). */
  
+struct sembuf lock_mem = { 0, -1, 0 };	//блокировка ресурса (нулевой, доступность для процессов -1, ждать)
+
+struct sembuf ulock_mem = { 0, 1, 0 };	//освобождение ресурса (нулевой, увеличить доступность на 1, ждать)
+
+void block(int semid)
+{
+	int block = semop(semid, &lock_mem, 1);
+	if(block == -1){
+		perror("lock");
+		exit(1);
+	}
+}
+
+void unblock(int semid)
+{
+	int unblock = semop(semid, &ulock_mem, 1);
+	if(unblock == -1){
+		perror("unlock");
+		exit(1);
+	}
+}
+
 void * threadFcn(void * Arg)
 {
 	struct thread_arg * arg;
+	int semid, shmid, * shm_count;
+	//arg = (struct thread_arg *) Arg;
+	//semid = arg->semid;
+	//*shm_count[0] = arg->shm_count;
+	
+	key_t key = ftok("/etc/sysctl.conf", 1);
+	shmid = Shmget(key, 1, 0); 
+	shm_count = (int *)shmat(shmid, NULL, 0);
+	semid = semget(key, 1, 0);
+	
 	while(1) {
-		pthread_mutex_lock(&mutex);
 		arg = (struct thread_arg *) Arg;
-		if ( arg->clients_count < 5 ) {
-				pthread_mutex_unlock(&mutex);
-				
+		//pthread_mutex_lock(&mutex);
+		block(semid);
+		if ( shm_count[0] < 5 ) {
+				//pthread_mutex_unlock(&mutex);
+				unblock(semid);
+				printf("brd: %d clients\n", shm_count[0]);
 				/* serialize, pack data */
 				AMessage msg = AMESSAGE__INIT;
 				void *buf;
 				unsigned len;
-				msg.clients_count = arg->clients_count;
+				pthread_mutex_lock(&mutex);
+				msg.clients_count = shm_count[0];
+				pthread_mutex_unlock(&mutex);
 				msg.send_str = arg->sendString;
-				msg.listener = arg->listener;
+				//msg.listener = arg->listener;
 				len = amessage__get_packed_size(&msg);
 				buf = malloc(len);
 				amessage__pack(&msg,buf);
@@ -46,7 +82,8 @@ void * threadFcn(void * Arg)
 				sleep(3);   /* Avoids flooding the network */
 			}
 		else { 
-			pthread_mutex_unlock(&mutex);
+			//pthread_mutex_unlock(&mutex);
+			unblock(semid);
 			printf("сервер загружен, широковещалка off\n");
 			sleep(10);
 		}
@@ -125,9 +162,10 @@ ssize_t Recvfrom(int socket, void * buffer, size_t length,
 void InterruptSignalHandler(int signalType)
 {
 	//shutdown(sig_thr_arg.sock, SHUT_RDWR);
+	//shmdt(&shm_count);
 	if (sig_thr_arg.sock) close(sig_thr_arg.sock);
-	if (sig_thr_arg.sock_cli) close(sig_thr_arg.sock_cli);
-    printf("close %d.\n", sig_thr_arg.sock);
+	//if (sig_thr_arg.sock_cli) close(sig_thr_arg.sock_cli);
+    printf("\nServer terminated by signal.\n");
     exit(1);
 }
 
@@ -159,3 +197,24 @@ int Connect(int sockfd, const struct sockaddr *addr,
 		DieWithError("connect() failed");
 	return conn;
 }
+
+int Shmget(key_t key, size_t size, int shmflg)
+{
+	int sh;
+	if( ( sh = shmget( key, size, shmflg ) ) < 0 )
+		DieWithError("shmget() failed");
+	return sh;
+}
+
+void * Shmat(int shmid, const void *shmaddr, int shmflg)
+{
+	void * sh = shmat(shmid, shmaddr, shmflg);
+	if(sh == (int *)-1)
+		DieWithError("Shmat() failed");
+	return sh;
+}
+
+
+
+
+

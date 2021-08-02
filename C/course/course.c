@@ -3,7 +3,7 @@
 #include "functions.h"
 #endif // FUNCTION_H
 
-#define COUNT 5
+#define COUNT 20
 #define USAGE "USAGE : ./course <COUNT>, COUNT = 5 clients by default\n"
 
 int main(int argc, char ** argv)
@@ -20,9 +20,7 @@ int main(int argc, char ** argv)
 		pids[i] = fork();
 		if (pids[i] == 0) {
 			sprintf(arg, "%d", i + 2);
-			printf("%s\n", arg);
 			execl("./course_cli_1", "course_cli_1", arg, NULL);
-			printf("111\n");
 		}
 	}
 	int result, stat;
