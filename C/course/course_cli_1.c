@@ -36,25 +36,7 @@ int main(int argc, char *argv[])
 	Setsockopt(sock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &reUseAddrLstr, 
 					sizeof(reUseAddrLstr));    /* permit reuse addr */
 					
-    /* Bind to the broadcast port */
-    Bind(sock, (struct sockaddr *) &broadcastAddr, sizeof(broadcastAddr));
-    
-    printf("Жду сервер...\n");
-    
-    msg_len = Recvfrom(sock, buf, MAX_MSG_SIZE, 0, NULL, 0);
-    //printf(buf);
-
-    msg = amessage__unpack(NULL, msg_len, buf);
-	
-	if (msg == NULL){
-		printf("error unpacking incoming message\n");
-		exit(1);
-	} 
-    
-    amessage__free_unpacked(msg, NULL);
-    close(sock);
-    
-    memset(&connectServAddr, 0, sizeof(connectServAddr));   /* Zero out structure */
+	memset(&connectServAddr, 0, sizeof(connectServAddr));   /* Zero out structure */
     connectServAddr.sin_family = AF_UNIX;                 /* Internet address family */
     connectServAddr.sin_addr.s_addr = inet_addr(addr);//inet_addr("127.0.0.2"); //  /* Any incoming interface */
     connectServAddr.sin_port = htons(connectPort);
@@ -67,16 +49,35 @@ int main(int argc, char *argv[])
 	//int reuse = 1;
 	//Setsockopt(connSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &reuse, 					sizeof(reuse));
 	//Bind(connSock, (const struct sockaddr *) &connectServAddr,               sizeof(connectServAddr));
-               
-    Connect(connSock, (struct sockaddr *) &connectServAddr,
-							sizeof(connectServAddr));
-	sleep(6);
-	char bla[18];
-	sprintf(bla, "blabla%s", argv[1]);
-	if(send(connSock, bla, sizeof(bla), 0) < sizeof(bla)) DieWithError("send() failed");
+					
+    /* Bind to the broadcast port */
+    Bind(sock, (struct sockaddr *) &broadcastAddr, sizeof(broadcastAddr));
+    
+    msg_len = Recvfrom(sock, buf, MAX_MSG_SIZE, 0, NULL, 0);
+    //printf(buf);
 
+    msg = amessage__unpack(NULL, msg_len, buf);
+	
+	if (msg == NULL){
+		printf("error unpacking incoming message\n");
+		exit(1);
+	}
+	
+	close(sock);
+	
+	printf("%s\n", msg->send_str);
+	
+	if( strcmp( msg->send_str, "Жду сообщений" ) == 0 ) {
+		Connect(connSock, (struct sockaddr *) &connectServAddr,
+							sizeof(connectServAddr));
+		char bla[18];
+		sprintf(bla, "blabla%s", argv[1]);
+		if(send(connSock, bla, sizeof(bla), 0) < sizeof(bla)) DieWithError("send() failed");
+		sleep(6);
+	}
+    
+    amessage__free_unpacked(msg, NULL);
 	close(connSock);
-    close(sock);
 
     exit(0);
 }

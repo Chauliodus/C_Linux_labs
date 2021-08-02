@@ -50,43 +50,37 @@ void * threadFcn(void * Arg)
 	while(1) {
 		arg = (struct thread_arg *) Arg;
 		//pthread_mutex_lock(&mutex);
+		
+		/* serialize, pack data */
+		AMessage msg = AMESSAGE__INIT;
+		void *buf;
+		unsigned len;
+		
 		block(semid);
+		printf("brd: %d clients\n", shm_count[0]);
 		if ( shm_count[0] < 5 ) {
-				//pthread_mutex_unlock(&mutex);
-				unblock(semid);
-				printf("brd: %d clients\n", shm_count[0]);
-				/* serialize, pack data */
-				AMessage msg = AMESSAGE__INIT;
-				void *buf;
-				unsigned len;
-				pthread_mutex_lock(&mutex);
-				msg.clients_count = shm_count[0];
-				pthread_mutex_unlock(&mutex);
-				msg.send_str = arg->sendString;
-				//msg.listener = arg->listener;
-				len = amessage__get_packed_size(&msg);
-				buf = malloc(len);
-				amessage__pack(&msg,buf);
-				
-				//buf = "random";
-				//len = sizeof(buf);
-				
-				if (sendto(arg->sock, buf, 
-						len, 0, (struct sockaddr *) 
-						&(arg->broadcastAddr), 
-						sizeof(arg->broadcastAddr)) != 
-						len)
-				 DieWithError("sendto() sent a different number of bytes than expected");
-
-				printf("сервер ждет сообщений, клиенты уведомлены.\n", len);
-				sleep(3);   /* Avoids flooding the network */
+			unblock(semid);
+			msg.send_str = "Жду сообщений";
+			printf("%s\n", msg.send_str);
 			}
 		else { 
-			//pthread_mutex_unlock(&mutex);
 			unblock(semid);
-			printf("сервер загружен, широковещалка off\n");
+			msg.send_str = "Есть сообщения";
+			printf("%s\n", msg.send_str);
 			sleep(10);
 		}
+		len = amessage__get_packed_size(&msg);
+		buf = malloc(len);
+		amessage__pack(&msg,buf);
+		
+		if (sendto(arg->sock, buf, 
+				len, 0, (struct sockaddr *) 
+				&(arg->broadcastAddr), 
+				sizeof(arg->broadcastAddr)) != 
+				len)
+			DieWithError("sendto() sent a different number of bytes than expected");
+
+		sleep(3);   /* Avoids flooding the network */
 	}
 }
 

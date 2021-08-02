@@ -42,8 +42,8 @@ int main(int argc, char **argv)
 	brdThreadArg = (struct thread_arg *)malloc(sizeof(struct thread_arg));
 	bzero(brdThreadArg, sizeof(struct thread_arg));
 	brdThreadArg->sock = br_sender;
-	brdThreadArg->sendString = "Жду сообщений";
-	brdThreadArg->sendStrLen = strlen(brdThreadArg->sendString);
+	//brdThreadArg->sendString = "Жду сообщений";
+	//brdThreadArg->sendStrLen = strlen(brdThreadArg->sendString);
 	brdThreadArg->broadcastAddr = broadcastAddr;
 	brdThreadArg->semid = semid;
 	shm_count[0] = 0;
