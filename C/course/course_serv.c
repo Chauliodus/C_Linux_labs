@@ -3,15 +3,14 @@
 #include "functions.h"
 #endif // FUNCTION_H
 
-#define PORT 			9998
 #define MAXLINE 		80
-#define LISTENQ 		1
 
 int main(int argc, char **argv)
 {
-	int						br_sender, listenfd, connfd, shmid, semid, * shm_count, tmp;
+	int						br_sender, listenfd, connfd, shmid, semid, * shm_count, tmp, str_i = 0, list_is_full = 0, x = 0;
 	pid_t					childpid;
 	char					buf[MAXLINE];
+	char **					strings;
 	struct sockaddr_in		broadcastAddr, servaddr;	
 	struct sockaddr_un		cliaddr;
 	pthread_t 				broadcastThread, sig_handle_thread;
@@ -21,6 +20,7 @@ int main(int argc, char **argv)
 	struct thread_arg * 	brdThreadArg;
 	key_t 					key = ftok("/etc/sysctl.conf", 1);
 	
+
 	shmid = Shmget(key, 1, IPC_CREAT | 0660); 
 	shm_count = (int *)shmat(shmid, NULL, 0);
 	semid = semget(key, 1, IPC_CREAT | 0660);
@@ -69,43 +69,67 @@ int main(int argc, char **argv)
 	/* main loop */
 	
 	bzero(&cliaddr, sizeof(cliaddr));
+	strings = calloc(20, 100);
 	
 	for ( ; ; ) {
-		connfd = Accept(listenfd, NULL, NULL);//(struct sockaddr *) &cliaddr, //
-							//(socklen_t *)sizeof(cliaddr));
-		
-		//pthread_mutex_lock(&mutex);
 		block(semid);
-		shm_count[0]++;
-		printf("queue = %d\n", shm_count[0]);
-		//pthread_mutex_unlock(&mutex);
-		unblock(semid);
-		
-		if ( (childpid = fork()) == 0) {	/* child process */
-						
-			close(listenfd);		
-			shmid = Shmget(key, 1, 0);
-			shm_count = (int *)shmat(shmid, NULL, 0);
-			semid = semget(key, 1, 0);
-			if(semid < 0)
-				DieWithError("Semget() failed");
+		if(shm_count[0] < LISTENQ){
+			unblock(semid);
+			connfd = Accept(listenfd, NULL, NULL);//(struct sockaddr *) &cliaddr, //
+								//(socklen_t *)sizeof(cliaddr));
 			
-			
-			char buff[18];
-			bzero(buff, 18);
-			//Recvfrom(connfd, buff, 18, NULL, (struct sockaddr *) &cliaddr, (socklen_t *)sizeof(cliaddr));
-			recv(connfd, buff, 18, 0);
-			printf("%s (queue = %d)\n", buff, shm_count[0]);
-
 			//pthread_mutex_lock(&mutex);
+			
 			block(semid);
-			shm_count[0]--;
+			shm_count[0]++;
+			printf("queue = %d\n", shm_count[0]);
 			//pthread_mutex_unlock(&mutex);
 			unblock(semid);
 			
-			exit(0);
-		}
+			if ( (childpid = fork()) == 0) {	/* child process */
+							
+				close(listenfd);
+				srand(time(NULL) - getpid());		
+				shmid = Shmget(key, 1, 0);
+				shm_count = (int *)shmat(shmid, NULL, 0);
+				semid = semget(key, 1, 0);
+				if(semid < 0)
+					DieWithError("Semget() failed");
+				
+				char buff[25];
+				bzero(buff, 25);
+				//Recvfrom(connfd, buff, 18, NULL, (struct sockaddr *) &cliaddr, (socklen_t *)sizeof(cliaddr));
+				recv(connfd, buff, 25, 0);
+				
+				printf("buff == %s\n", buff);
+				if(strcmp(buff, "str") != 0) {
+					strings[str_i] = buff;
+					printf("От клиента получена строка: %s\n", strings[str_i]);
+					if(str_i < MAXSTRINGS) str_i++; else { str_i = 0; list_is_full = 1; }
+				} 
+				
+				if(strcmp(buff, "str") == 0) {
+					if(list_is_full < 1) {
+						printf("-------------\n");
+						x = rand()%str_i; 
+						printf("%d\n", x);
+					} else { 
+						x = rand()%MAXSTRINGS; 
+						printf("%d\n", x);
+					}
+					printf("%d\n", x);
+					printf("Клиенту отправлено: %s\n", strings[x]);
+					if( send( connfd, strings[x], sizeof(strings[x]), 0 ) < sizeof(strings[x]) ) 
+						DieWithError("serv: send() failed");
+				}
 
-		close(connfd);			/* parent closes connected socket */
+				block(semid);
+				shm_count[0]--;
+				unblock(semid);
+				
+				exit(0);
+			}
+			close(connfd);			/* parent closes connected socket */
+		} else unblock(semid);
 	}
 }

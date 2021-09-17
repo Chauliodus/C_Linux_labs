@@ -18,6 +18,12 @@
 #include <signal.h> /* for sigaction() */
 #include <sys/un.h>
 
+#define LISTENQ 		1		/* queue size */
+#define PORT 			9998
+#define COUNT_1 			5		/* clients_1 count */
+#define COUNT_2 			5		/* clients_2 count */
+#define MAXSTRINGS 			20		/* макс число сообщений, которые хранит сервер */
+
 
 union semun{
 	int val;

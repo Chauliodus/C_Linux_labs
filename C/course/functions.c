@@ -49,7 +49,6 @@ void * threadFcn(void * Arg)
 	
 	while(1) {
 		arg = (struct thread_arg *) Arg;
-		//pthread_mutex_lock(&mutex);
 		
 		/* serialize, pack data */
 		AMessage msg = AMESSAGE__INIT;
@@ -58,7 +57,7 @@ void * threadFcn(void * Arg)
 		
 		block(semid);
 		printf("brd: %d clients\n", shm_count[0]);
-		if ( shm_count[0] < 5 ) {
+		if ( shm_count[0] < LISTENQ ) {
 			unblock(semid);
 			msg.send_str = "Жду сообщений";
 			printf("%s\n", msg.send_str);
@@ -157,10 +156,10 @@ void InterruptSignalHandler(int signalType)
 {
 	//shutdown(sig_thr_arg.sock, SHUT_RDWR);
 	//shmdt(&shm_count);
-	if (sig_thr_arg.sock) close(sig_thr_arg.sock);
-	//if (sig_thr_arg.sock_cli) close(sig_thr_arg.sock_cli);
-    printf("\nServer terminated by signal.\n");
-    exit(1);
+	close(sig_thr_arg.sock_cli);
+	close(sig_thr_arg.sock);
+	printf("Terminated by signal\n");
+	exit(1);
 }
 
 void * sigHandleFcn (void * arg)
